@@ -63,6 +63,58 @@ const ALIASES: [string, Unit][] = [
 // Longer aliases first so "tablespoon" wins over "tbs" and "fl oz" over "oz".
 const SORTED_ALIASES = [...ALIASES].sort((a, b) => b[0].length - a[0].length);
 
+export type System = 'us' | 'metric';
+
+// Kitchen conversions, not lab ones. A US cup is 240 ml so 1/3 cup
+// lands on 80 ml instead of 78.86.
+const VOLUME_ML: Record<string, number> = {
+  tsp: 5,
+  tbsp: 15,
+  cup: 240,
+  floz: 30,
+  pint: 480,
+  quart: 960,
+  ml: 1,
+  l: 1000,
+};
+
+const WEIGHT_G: Record<string, number> = {
+  oz: 28.3495,
+  lb: 453.592,
+  g: 1,
+  kg: 1000,
+};
+
+export function dimension(unit: Unit): 'volume' | 'weight' {
+  return unit in WEIGHT_G ? 'weight' : 'volume';
+}
+
+export function systemOf(unit: Unit): System {
+  return unit === 'ml' || unit === 'l' || unit === 'g' || unit === 'kg' ? 'metric' : 'us';
+}
+
+export function toBase(amount: number, unit: Unit): number {
+  const per = WEIGHT_G[unit] ?? VOLUME_ML[unit];
+  return amount * per;
+}
+
+export function unitLabel(unit: Unit, amount: number): string {
+  // "1/2 cup" and "1 cup", but "2 cups". Zero takes the plural.
+  const singular = amount > 0 && amount <= 1;
+  switch (unit) {
+    case 'cup':
+      return singular ? 'cup' : 'cups';
+    case 'pint':
+      return singular ? 'pint' : 'pints';
+    case 'quart':
+      return singular ? 'quart' : 'quarts';
+    case 'floz':
+      return 'fl oz';
+    default:
+      return unit;
+  }
+}
+
 export function takeUnit(input: string): { unit: Unit; rest: string } | null {
   const text = input.replace(/^\s+/, '');
   const lower = text.toLowerCase();
