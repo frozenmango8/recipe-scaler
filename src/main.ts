@@ -200,7 +200,7 @@ function render(): void {
     if (line.note) {
       const note = document.createElement('span');
       note.className = 'note';
-      note.textContent = line.note;
+      note.textContent = ` (${line.note})`;
       name.append(note);
     }
     row.append(amount, name);
