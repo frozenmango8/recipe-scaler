@@ -88,6 +88,9 @@ describe('parseRecipe', () => {
       quantity: { amount: 2 },
       name: 'large eggs',
     });
+    expect(item('2 cans tomatoes').name).toBe('cans tomatoes');
+    expect(item('4 cloves garlic').name).toBe('cloves garlic');
+    expect(item('1 large onion').name).toBe('large onion');
     expect(item('2 cups of flour').name).toBe('flour');
     expect(item('about 2 cups broth').quantity).toEqual({ amount: 2, unit: 'cup' });
     expect(item('~1/4 tsp nutmeg').quantity?.amount).toBeCloseTo(0.25);
