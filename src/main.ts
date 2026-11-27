@@ -37,6 +37,7 @@ app.innerHTML = `
         <label><input type="radio" name="system" value="metric"> Metric</label>
       </div>
     </fieldset>
+    <button type="button" id="print">Print</button>
   </form>
   <section id="out"></section>
 `;
@@ -54,6 +55,64 @@ const fromInput = must<HTMLInputElement>('#from');
 const toInput = must<HTMLInputElement>('#to');
 const multiplier = must<HTMLInputElement>('#multiplier');
 const output = must<HTMLElement>('#out');
+
+const STORAGE_KEY = 'recipe-scaler';
+
+interface Saved {
+  name: string;
+  ingredients: string;
+  mode: 'servings' | 'multiplier';
+  from: string;
+  to: string;
+  multiplier: string;
+  system: System;
+}
+
+function load(): Partial<Saved> | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw) as Partial<Saved>;
+    return data && typeof data === 'object' ? data : null;
+  } catch {
+    return null;
+  }
+}
+
+function save(): void {
+  const state: Saved = {
+    name: nameInput.value,
+    ingredients: ingredients.value,
+    mode: mode(),
+    from: fromInput.value,
+    to: toInput.value,
+    multiplier: multiplier.value,
+    system: system(),
+  };
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // Private mode and a full disk both throw. The page still works.
+  }
+}
+
+function applySaved(saved: Partial<Saved>): void {
+  if (typeof saved.name === 'string') nameInput.value = saved.name;
+  if (typeof saved.ingredients === 'string') ingredients.value = saved.ingredients;
+  if (saved.mode === 'servings' || saved.mode === 'multiplier') {
+    const radio = form.querySelector<HTMLInputElement>(`input[name="mode"][value="${saved.mode}"]`);
+    if (radio) radio.checked = true;
+  }
+  if (saved.system === 'us' || saved.system === 'metric') {
+    const radio = form.querySelector<HTMLInputElement>(
+      `input[name="system"][value="${saved.system}"]`,
+    );
+    if (radio) radio.checked = true;
+  }
+  if (typeof saved.from === 'string') fromInput.value = saved.from;
+  if (typeof saved.to === 'string') toInput.value = saved.to;
+  if (typeof saved.multiplier === 'string') multiplier.value = saved.multiplier;
+}
 
 ingredients.placeholder = [
   '2 cups all-purpose flour',
@@ -152,8 +211,10 @@ function render(): void {
 form.addEventListener('submit', (event) => event.preventDefault());
 form.addEventListener('input', () => {
   syncDisabled();
+  save();
   render();
 });
+must<HTMLButtonElement>('#print').addEventListener('click', () => window.print());
 
 for (const field of [fromInput, toInput, multiplier]) {
   field.addEventListener(
@@ -165,5 +226,7 @@ for (const field of [fromInput, toInput, multiplier]) {
   );
 }
 
+const saved = load();
+if (saved) applySaved(saved);
 syncDisabled();
 render();
